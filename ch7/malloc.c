@@ -35,13 +35,23 @@ void fl_remove(block_t *b)
 }
 
 void fl_add(block_t *b) {
+    printf("adding %ld bytes block to free list\n", b->size);
     b->prev = NULL; 
     b->next = NULL;
-    if (head) {
+    if (!head || (unsigned long)head > (unsigned long)b) {
+        if (head) {
+            head->prev = b;
+        }
         b->next = head;
-        head->prev = b;
+        head = b;
+        return;
     }
-    head = b;
+    block_t *curr = head;
+    while(curr->next && (unsigned long)curr->next < (unsigned long)b) {
+        curr = curr->next;
+    }
+    b->next = curr->next;
+    curr->next = b;
 }
 
 // print debug stats
