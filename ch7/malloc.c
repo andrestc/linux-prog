@@ -34,7 +34,8 @@ void fl_remove(block_t *b)
     }
 }
 
-void fl_add(block_t *b) {
+void fl_add(block_t *b) 
+{
     printf("adding %ld bytes block to free list\n", b->size);
     b->prev = NULL; 
     b->next = NULL;
@@ -44,14 +45,34 @@ void fl_add(block_t *b) {
         }
         b->next = head;
         head = b;
-        return;
+    } else {
+        block_t *curr = head;
+        while(curr->next && (unsigned long)curr->next < (unsigned long)b) {
+            curr = curr->next;
+        }
+        b->next = curr->next;
+        curr->next = b;
     }
+}
+
+// scans the list and merge continuous blocks
+void scan_merge() 
+{
     block_t *curr = head;
-    while(curr->next && (unsigned long)curr->next < (unsigned long)b) {
+    unsigned long header_curr, header_next;
+    while(curr->next) {
+        header_curr = (unsigned long) curr;
+        header_next = (unsigned long) curr->next;
+        if (header_curr + curr->size + sizeof(block_t) == header_next) {
+            printf("merging continuous blocks: %ld <-> %ld\n", header_curr, header_next);
+            curr->size += curr->next->size + sizeof(block_t);
+            curr->next = curr->next->next;
+            if (curr->next) {
+                curr->next->prev = curr;
+            }
+        }
         curr = curr->next;
-    }
-    b->next = curr->next;
-    curr->next = b;
+    } 
 }
 
 // print debug stats
@@ -62,7 +83,7 @@ void stats(char *prefix)
     printf("[%s] free list: \n", prefix);
     int c = 0;
     while (ptr) {
-        printf("(%d) [%10p] -> [%10p] (size: %ld)\n", c, ptr, ptr + ptr->size, ptr->size);
+        printf("(%d) <%10p> (size: %ld)\n", c, BLOCK_MEM(ptr), ptr->size);
         ptr = ptr->next;
         c++;
     }
@@ -70,7 +91,8 @@ void stats(char *prefix)
 
 // shrinks b to size and returns a new block with 
 // the rest of the size
-block_t *split(block_t *b, size_t size) {
+block_t *split(block_t *b, size_t size) 
+{
     void *mem_block = BLOCK_MEM(b);
     printf("splitting block at: %10p\n", mem_block);
     block_t *newptr = (block_t *)((unsigned long)mem_block + size);
@@ -120,6 +142,7 @@ void *_malloc(size_t size)
 void _free(void *ptr) 
 {
     fl_add(BLOCK_HEADER(ptr));
+    scan_merge();
 }
 
 int main(int argc, char const *argv[])
