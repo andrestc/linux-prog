@@ -30,6 +30,16 @@ void fl_remove(block_t *b)
     }
 }
 
+void fl_add(block_t *b) {
+    b->prev = NULL; 
+    b->next = NULL;
+    if (head) {
+        b->next = head;
+        head->prev = b;
+    }
+    head = b;
+}
+
 // print debug stats
 void stats(char *prefix)
 {
@@ -46,19 +56,29 @@ void stats(char *prefix)
 
 void *_malloc(size_t size)
 {
+    printf(">> _malloc: size %ld\n", size);
     block_t *ptr = head;
     while (ptr) {
-        if (ptr->size == size) {
+        if (ptr->size >= size + sizeof(block_t)) {
+            void *block_mem = BLOCK_MEM(ptr); 
             fl_remove(ptr);
-            printf("reusing previously freed block: %10p\n", BLOCK_MEM(ptr));
-            return BLOCK_MEM(ptr);
+            if (ptr->size == size) {
+                printf("reusing previously freed block: %10p\n", block_mem);
+                return block_mem;
+            }
+            printf("splitting block at: %10p\n", block_mem);
+            block_t *newptr = ptr + size;
+            newptr->size = ptr->size - size - sizeof(block_t);
+            ptr->size = size;
+            fl_add(newptr);
+            return block_mem;
         }
         ptr = ptr->next;
     }
     printf("unable to find available block\n");
     ptr = sbrk(sizeof(block_t) + size);
     if (!ptr) {
-        printf("failed to alloc %ld", sizeof(block_t)+size);
+        printf("failed to alloc %ldzn", sizeof(block_t)+size);
         return NULL;
     }
     ptr->size = size;
@@ -69,16 +89,7 @@ void *_malloc(size_t size)
 
 void _free(void *ptr) 
 {
-    block_t *block = BLOCK_HEADER(ptr);
-    block->prev = NULL;
-    if(head) {
-        block->next = head;
-        head->prev = block;
-        head = block;
-    } else {
-        block->next = NULL;
-        head = block;
-    }
+    fl_add(BLOCK_HEADER(ptr));
 }
 
 int main(int argc, char const *argv[])
@@ -86,13 +97,9 @@ int main(int argc, char const *argv[])
     char *str, *str2;
     str = (char *) _malloc(15);
     str2 = (char *) _malloc(15);
-    strcpy(str, "tutorialspoint");
-    strcpy(str2, "tutorial");
-    printf("String = %s,  Address = %p\n", str, &str);
-    printf("String = %s,  Address = %p\n", str2, &str2);
     _free(str);
     stats("1");
-    str = (char *) _malloc(15);
+    str = (char *) _malloc(10);
     stats("2");
     _free(str2);
     _free(str);
