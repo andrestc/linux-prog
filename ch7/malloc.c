@@ -22,6 +22,8 @@ typedef struct block {
 
 static block_t *head = NULL;
 
+/* fl_remove removes a block from the free list
+ * and adjusts the head accordingly */
 void
 fl_remove(block_t * b)
 {
@@ -39,10 +41,12 @@ fl_remove(block_t * b)
 	}
 }
 
+/* fl_add adds a block to the free list keeping
+ * the list sorted by the block begin address,
+ * this helps when scanning for continuous blocks */
 void
 fl_add(block_t * b)
 {
-	printf("adding %ld bytes block to free list\n", b->size);
 	b->prev = NULL;
 	b->next = NULL;
 	if (!head || (unsigned long)head > (unsigned long)b) {
@@ -53,7 +57,8 @@ fl_add(block_t * b)
 		head = b;
 	} else {
 		block_t        *curr = head;
-		while (curr->next && (unsigned long)curr->next < (unsigned long)b) {
+		while (curr->next
+		       && (unsigned long)curr->next < (unsigned long)b) {
 			curr = curr->next;
 		}
 		b->next = curr->next;
@@ -61,7 +66,13 @@ fl_add(block_t * b)
 	}
 }
 
-//scans the list and merge continuous blocks
+/* scan_merge scans the free list in order to find
+ * continuous free blocks that can be merged and also
+ * checks if our last free block ends where the program
+ * break is. If it does, and the free block is larger then
+ * MIN_DEALLOC then the block is released to the OS, by
+ * calling brk to set the program break to the begin of
+ * the block */
 void
 scan_merge()
 {
@@ -76,7 +87,8 @@ scan_merge()
 		header_curr = (unsigned long)curr;
 		header_next = (unsigned long)curr->next;
 		if (header_curr + curr->size + sizeof(block_t) == header_next) {
-			printf("merging continuous blocks: %10p (size: %ld) <-> %10p (size: %ld) \n", curr, curr->size, curr->next, curr->next->size);
+			/* found two continuous addressed blocks, merge them
+			 * and create a new block with the sum of their sizes */
 			curr->size += curr->next->size + sizeof(block_t);
 			curr->next = curr->next->next;
 			if (curr->next) {
@@ -89,9 +101,11 @@ scan_merge()
 	}
 	stats("after merge");
 	header_curr = (unsigned long)curr;
-	printf("comparing last mem block %10p (size: %ld) to program break %10p\n", curr, curr->size, (void *)program_break);
-	if (header_curr + curr->size + sizeof(block_t) == program_break && curr->size >= MIN_DEALLOC) {
-		printf("releasing %ld bytes to OS\n", curr->size + sizeof(block_t));
+	/* last check if our last free block ends on the program break and is
+	 * big enough to be released to the OS (this check is to reduce the
+	 * number of calls to sbrk/brk */
+	if (header_curr + curr->size + sizeof(block_t) == program_break
+	    && curr->size >= MIN_DEALLOC) {
 		fl_remove(curr);
 		if (brk(curr) != 0) {
 			printf("error freeing memory\n");
@@ -99,7 +113,8 @@ scan_merge()
 	}
 }
 
-//print debug stats
+/* stats prints some debug information regarding the
+ * current program break and the blocks on the free list */
 void
 stats(char *prefix)
 {
@@ -114,16 +129,14 @@ stats(char *prefix)
 	}
 }
 
-//shrinks b to size and returns a new block with
-// the rest of the size
+/* splits the block b by creating a new block after size bytes,
+ * this new block is returned */
 block_t * split(block_t * b, size_t size)
 {
 	void           *mem_block = BLOCK_MEM(b);
-	printf("splitting block at: %10p (size: %ld)\n", b, b->size);
 	block_t        *newptr = (block_t *) ((unsigned long)mem_block + size);
 	newptr->size = b->size - (size + sizeof(block_t));
 	b->size = size;
-	printf("created block at: %10p (size: %ld)\n", newptr, newptr->size);
 	return newptr;
 }
 
@@ -132,17 +145,19 @@ _malloc(size_t size)
 {
 	void           *block_mem;
 	block_t        *ptr, *newptr;
-	size_t		alloc_size = size >= ALLOC_UNIT ? size + sizeof(block_t) : ALLOC_UNIT;
-	printf(">> _malloc: size %ld\n", size);
+	size_t		alloc_size = size >= ALLOC_UNIT ? size + sizeof(block_t)
+		: ALLOC_UNIT;
 	ptr = head;
 	while (ptr) {
 		if (ptr->size >= size + sizeof(block_t)) {
 			block_mem = BLOCK_MEM(ptr);
 			fl_remove(ptr);
 			if (ptr->size == size) {
-				printf("reusing previously freed block: %10p\n", block_mem);
+				// we found a perfect sized block, return it
 				return block_mem;
 			}
+			// our block is bigger then requested, split it and add
+			// the spare to our free list
 			newptr = split(ptr, size);
 			fl_add(newptr);
 			return block_mem;
@@ -150,7 +165,11 @@ _malloc(size_t size)
 			ptr = ptr->next;
 		}
 	}
-	printf("unable to find available block. allocating: %ld bytes\n", alloc_size);
+	/* We are unable to find a free block on our free list, so we
+	 * should ask the OS for memory using sbrk. We will alloc
+	 * more alloc_size bytes (probably way more than requested) and then
+	 * split the newly allocated block to keep the spare space on our free
+	 * list */
 	ptr = sbrk(alloc_size);
 	if (!ptr) {
 		printf("failed to alloc %ld\n", alloc_size);
@@ -204,5 +223,5 @@ main(int argc, char const *argv[])
 	_free(str2);
 	_free(str);
 	stats("end main");
-	return (0);
+	return (EXIT_SUCCESS);
 }
