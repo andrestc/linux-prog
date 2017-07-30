@@ -27,16 +27,15 @@
 int 
 authenticate(char *username) 
 {
-    struct passwd *pwd;
     struct spwd *spwd;
+    struct passwd *pwd;
     char *encrypted;
     Boolean authOk;
-    if (username == NULL) {
-        username = "root\0";
-    }
+
     pwd = getpwnam(username);
-    if (pwd == NULL)   
-        fatal("could not get password record");
+    if (pwd == NULL) 
+        fatal("could not get password file");
+
     spwd = getspnam(username);
     if (spwd == NULL && errno == EACCES)
         fatal("no permission to read shadow password file");
@@ -46,18 +45,16 @@ authenticate(char *username)
     
     encrypted = crypt(getpass("Password:"), pwd->pw_passwd);
 
-    authOk = strcmp(encrypted, pwd->pw_passwd) == 0;
-    if (!authOk) {
-        return 1;
-    }
-    return 0;
+    return strcmp(encrypted, pwd->pw_passwd);
 }
 
 int
 main(int argc, char **argv)
 {
-    int c;
+    int c, status;
     char *username = NULL;
+    struct passwd *pwd;
+    pid_t pid;
 
     if (argc < 2) {
         printf("Usage: %s [-u user] cmd args...\n", argv[0]);
@@ -80,8 +77,26 @@ main(int argc, char **argv)
                     optopt);
         return 1;
     }
+    if (username == NULL) {
+        username = "root\0";
+    }
     if (authenticate(username) != 0) {
         printf("Incorrect password\n");
+        exit(EXIT_FAILURE);
+    }
+
+    pwd = getpwnam(username);
+    if (pwd == NULL)
+        fatal("unable to retrieve user info");
+
+    if (setuid(pwd->pw_uid) != 0)   
+        errExit("setuid");
+    
+    pid = fork();
+    if (pid == -1) {
+        errExit("fork");
+    } else if (pid != 0) {
+        execl("/usr/bin/whoami", "whoami", (char *) NULL);
         exit(EXIT_FAILURE);
     }
     exit(EXIT_SUCCESS);
