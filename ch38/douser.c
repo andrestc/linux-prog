@@ -51,6 +51,7 @@ authenticate(char *username)
 int
 main(int argc, char **argv)
 {
+    char *envp[] = {"PATH=/bin:/usr/bin", NULL};
     int c, status;
     char *username = NULL;
     struct passwd *pwd;
@@ -69,8 +70,6 @@ main(int argc, char **argv)
         case '?':
         if (optopt == 'u')
             fprintf (stderr, "Option -%c requires an argument.\n", optopt);
-        else if (isprint (optopt))
-            fprintf (stderr, "Unknown option `-%c'.\n", optopt);
         else
             fprintf (stderr,
                     "Unknown option character `\\x%x'.\n",
@@ -96,8 +95,8 @@ main(int argc, char **argv)
     if (pid == -1) {
         errExit("fork");
     } else if (pid != 0) {
-        execl("/usr/bin/whoami", "whoami", (char *) NULL);
-        exit(EXIT_FAILURE);
+        execvpe(argv[optind], &argv[optind], envp);
+        errExit("execvpe");
     }
     exit(EXIT_SUCCESS);
 }
