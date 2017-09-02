@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 		timespec_diff(&begin, &end, &duration);
 		float secs = duration.tv_sec + duration.tv_nsec/1000000000.0;
 		printf("took %9.6f secs\n", secs);
+		printf("wrote %f bytes/sec\n", (double) blockSize*numBlocks/secs);
 		if (close(pfd[1]) == -1)
 			errExit("close");
 		wait(NULL);
