@@ -8,25 +8,20 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Header file for Listing 64-2 */
 
-/* get_num.h
+/* pty_fork.h
 
-   Header file for get_num.c.
+   Header file for pty_fork.c.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef FORK_PTY_H
+#define FORK_PTY_H
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
-
-long getLong(const char *arg, int flags, const char *name);
-
-int getInt(const char *arg, int flags, const char *name);
+pid_t ptyFork(int *masterFd, char *slaveName, size_t snLen,
+        const struct termios *slaveTermios, const struct winsize *slaveWS);
 
 #endif

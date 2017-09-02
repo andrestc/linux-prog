@@ -8,25 +8,22 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Header file for Listing 20-4 */
 
-/* get_num.h
+/* signal_functions.h
 
-   Header file for get_num.c.
+   Header file for signal_functions.c.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef SIGNAL_FUNCTIONS_H
+#define SIGNAL_FUNCTIONS_H
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#include <signal.h>
+#include "tlpi_hdr.h"
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
+int printSigMask(FILE *of, const char *msg);
 
-long getLong(const char *arg, int flags, const char *name);
+int printPendingSigs(FILE *of, const char *msg);
 
-int getInt(const char *arg, int flags, const char *name);
+void printSigset(FILE *of, const char *ldr, const sigset_t *mask);
 
 #endif

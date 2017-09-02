@@ -8,25 +8,29 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Supplementary program for Chapter 3 */
 
-/* get_num.h
+/* alt_functions.h
 
-   Header file for get_num.c.
+   Header file for alt_functions.c.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef ALT_FUNCTIONS_H
+#define ALT_FUNCTIONS_H         /* Prevent accidental double inclusion */
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#if defined(__osf__) || defined(__hpux) || defined(_AIX) || \
+        defined(__sgi) || defined(__APPLE__)
+#define strsignal(sig) ALT_strsignal(sig)
+#endif
+char *ALT_strsignal(int sig);
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
+#if defined(__hpux) || defined(__osf__)
+#define hstrerror(err) ALT_hstrerror(err)
+#endif
+char *ALT_hstrerror(int sig);
 
-long getLong(const char *arg, int flags, const char *name);
-
-int getInt(const char *arg, int flags, const char *name);
+#if defined(__hpux) || defined(__osf__)
+#define posix_openpt(flags) ALT_posix_openpt(flags)
+#endif
+int ALT_posix_openpt(int flags);
 
 #endif

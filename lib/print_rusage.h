@@ -8,25 +8,17 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Solution for Exercise 36-2:c */
 
-/* get_num.h
+/* print_rusage.h
 
-   Header file for get_num.c.
+   Header file for print_rusage.c.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef PRINT_RUSAGE_H      /* Prevent accidental double inclusion */
+#define PRINT_RUSAGE_H
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#include <sys/resource.h>
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
-
-long getLong(const char *arg, int flags, const char *name);
-
-int getInt(const char *arg, int flags, const char *name);
+void printRusage(const char *leader, const struct rusage *ru);
 
 #endif

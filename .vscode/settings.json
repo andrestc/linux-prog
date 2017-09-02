@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "signal.h": "c",
+        "stdlib.h": "c",
+        "unistd.h": "c",
+        "errno.h": "c",
+        "pwd.h": "c",
+        "stdio.h": "c",
+        "_off_t.h": "c",
+        "string.h": "c"
+    }
+}

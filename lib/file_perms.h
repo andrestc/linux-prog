@@ -8,25 +8,20 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Listing 15-3 */
 
-/* get_num.h
+/* file_perms.h
 
-   Header file for get_num.c.
+   Header file for file_perms.c.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef FILE_PERMS_H
+#define FILE_PERMS_H
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#include <sys/types.h>
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
+#define FP_SPECIAL 1            /* Include set-user-ID, set-group-ID, and sticky
+                                   bit information in returned string */
 
-long getLong(const char *arg, int flags, const char *name);
-
-int getInt(const char *arg, int flags, const char *name);
+char *filePermStr(mode_t perm, int flags);
 
 #endif

@@ -8,25 +8,32 @@
 * See the files COPYING.lgpl-v3 and COPYING.gpl-v3 for details.           *
 \*************************************************************************/
 
-/* Listing 3-5 */
+/* Listing 47-2 */
 
-/* get_num.h
+/* semun.h
 
-   Header file for get_num.c.
+   Definition of the semun union used by the System V semaphore semop()
+   system call.
 */
-#ifndef GET_NUM_H
-#define GET_NUM_H
+#ifndef SEMUN_H
+#define SEMUN_H                 /* Prevent accidental double inclusion */
 
-#define GN_NONNEG       01      /* Value must be >= 0 */
-#define GN_GT_0         02      /* Value must be > 0 */
+#include <sys/types.h>          /* For portability */
+#include <sys/sem.h>
 
-                                /* By default, integers are decimal */
-#define GN_ANY_BASE   0100      /* Can use any base - like strtol(3) */
-#define GN_BASE_8     0200      /* Value is expressed in octal */
-#define GN_BASE_16    0400      /* Value is expressed in hexadecimal */
+#if ! defined(__FreeBSD__) && ! defined(__OpenBSD__) && \
+                ! defined(__sgi) && ! defined(__APPLE__)
+                /* Some implementations already declare this union */
 
-long getLong(const char *arg, int flags, const char *name);
+union semun {                   /* Used in calls to semctl() */
+    int                 val;
+    struct semid_ds *   buf;
+    unsigned short *    array;
+#if defined(__linux__)
+    struct seminfo *    __buf;
+#endif
+};
 
-int getInt(const char *arg, int flags, const char *name);
+#endif
 
 #endif
